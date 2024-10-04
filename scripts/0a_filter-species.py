@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
-
 '''Usage: filter-species.py <alignment> <wanted_species>'''
 
 # Modules
 import os  # Manipulating filenames
 from Bio import SeqIO  # Reading in DNA sequences
+from Bio.SeqRecord import SeqRecord
+from Bio.Seq import Seq
 
 # Check if running interactively in an iPython console, or in a script from the
 # command line
@@ -24,8 +24,8 @@ if in_ipython() is False:
     wanted_species_file = cmdln_args.get('<wanted_species>')
 # Run interactively in an iPython console
 if in_ipython() is True:
-    alignment_file = 'accD_petrosavia_2018-09-30.fasta'
-    wanted_species_file = 'petrosaviids_1_taxa_petrosavia.txt'
+    alignment_file = '4471.fasta'
+    wanted_species_file = 'taxa_Dioscoreales.txt'
 
 # Read in the wanted_species_file as a list of lines and retain the name in the
 # list wanted_species_names.
@@ -42,8 +42,22 @@ matching_records = []
 for record in SeqIO.parse(alignment_file, 'fasta'):
     for name in wanted_species_names:
         if name == record.id:
-                matching_records.append(record)
-                wanted_species_names.remove(name)
+            matching_records.append(record)
+            wanted_species_names.remove(name)
+
+# for record in matching_records:
+#     for name in wanted_species_names:
+#         if name not in record.id:
+#             gap_seq = '-'*len(record)
+#             matching_records.append(Seq(gap_seq, id=name))
+#             wanted_species_names.remove(name)
+
+missing_taxa = []
+for name in wanted_species_names:
+    gap_seq = '-'*len(record)
+    empty_seq = SeqRecord(Seq(gap_seq), id=name, description='')
+    matching_records.append(empty_seq)
+
 
 # Write matching_records to file using the original filename and appending
 # .fasta to the end.

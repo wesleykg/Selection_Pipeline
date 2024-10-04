@@ -1,4 +1,4 @@
-for dir in alignments/*/;
+for dir in ../alignments/*/;
 do
     cd $dir
     for alignment in *.fasta;
@@ -8,5 +8,5 @@ do
         sed 's/ [0-9]* bp//g' $alignment.noallgaps > $alignment
         rm $alignment.noallgaps
     done
-    cd ../../
+    cd ../../scripts/
 done
