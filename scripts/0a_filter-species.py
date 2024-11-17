@@ -2,6 +2,7 @@
 
 # Modules
 import os  # Manipulating filenames
+from pathlib import Path  # Deleting old files
 from Bio import SeqIO  # Reading in DNA sequences
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
@@ -24,8 +25,14 @@ if in_ipython() is False:
     wanted_species_file = cmdln_args.get('<wanted_species>')
 # Run interactively in an iPython console
 if in_ipython() is True:
-    alignment_file = '4471.fasta'
-    wanted_species_file = 'taxa_Dioscoreales.txt'
+    alignment_file = 'atpB_alltaxa_matrix_19Jan18.fasta'
+    wanted_species_file = 'taxa_burmPartials.txt'
+
+# Retrieve the clade and alignment name for output
+clade_name = os.path.splitext(wanted_species_file)[0]
+clade_name = clade_name.split('_')[1]
+alignment_name = os.path.splitext(alignment_file)[0]
+out_fasta_filename = alignment_name + '_' + clade_name + '.fasta'
 
 # Read in the wanted_species_file as a list of lines and retain the name in the
 # list wanted_species_names.
@@ -45,14 +52,7 @@ for record in SeqIO.parse(alignment_file, 'fasta'):
             matching_records.append(record)
             wanted_species_names.remove(name)
 
-# for record in matching_records:
-#     for name in wanted_species_names:
-#         if name not in record.id:
-#             gap_seq = '-'*len(record)
-#             matching_records.append(Seq(gap_seq, id=name))
-#             wanted_species_names.remove(name)
-
-missing_taxa = []
+# Add missing species
 for name in wanted_species_names:
     gap_seq = '-'*len(record)
     empty_seq = SeqRecord(Seq(gap_seq), id=name, description='')
@@ -61,5 +61,6 @@ for name in wanted_species_names:
 
 # Write matching_records to file using the original filename and appending
 # .fasta to the end.
-alignment_name = os.path.splitext(alignment_file)[0]
-SeqIO.write(matching_records, alignment_name + '.fasta', format='fasta')
+SeqIO.write(matching_records, out_fasta_filename, format='fasta')
+alignment_path = Path(alignment_file)
+alignment_path.unlink()

@@ -24,19 +24,21 @@ if in_ipython() is True:
 alignment_format = os.path.splitext(alignment_file)[1]  # Retrieve filetype
 alignment_format = alignment_format[1:]  # Remove '.' character from filetype
 
+clean_alignment_file_name = alignment_file[len("temp_"):]
+
 record = next(SeqIO.parse(alignment_file, format=alignment_format))
 seq_len = len(record.seq)
 if seq_len % 3 != 0:
-    print(alignment_file + ' is out of frame.')
+    print(clean_alignment_file_name + ' is out of frame.')
 else:
     for record in SeqIO.parse(alignment_file, format=alignment_format):
         try:
             aa_record = record.translate(gap='-')
             if '*' in aa_record.seq:
-                print(alignment_file + ' contains stop codons.')
+                print(clean_alignment_file_name + ' contains stop codons.')
         except CodonTable.TranslationError:
             pass
-            print(alignment_file + ' has a Translation Error.')
+            print(clean_alignment_file_name + ' has a Translation Error. Sometimes caused by the presence of "?" or other unknown characters in the alignment file.')
 
 
 #record_nogaps = record.seq.ungap('-')
