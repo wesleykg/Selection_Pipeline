@@ -1,49 +1,65 @@
-'''Usage: 0b_prune-tree.py <tree> <taxa_to_keep> <clade>'''
-
+from pathlib import Path
 from ete3 import Tree  # Manipulating trees
-import os  # Manipulating filenames
+import typer
 
-# Check if running interactively in an iPython console, or in a script from the
-# command line
-def in_ipython():
+def main(
+    tree_file: Path = typer.Argument(
+        ..., help="Path to the tree file in Newick format."
+    ),
+    taxa_to_keep_file: Path = typer.Argument(
+        ..., help="Path to the file containing taxa to keep."
+    ),
+    clade: str = typer.Argument(
+        ..., help="Name of the clade being pruned down to."
+    ),
+):
+    # Construct the output tree filename
+    tree_name = tree_file.stem
+    out_tree_filename = f"{tree_name}_{clade}.tre"
+    out_tree_path = tree_file.parent / out_tree_filename
+
+    # Read the tree
     try:
-        __IPYTHON__
-        return True
-    except NameError:
-        return False
-# Run in a script from the command line
-if in_ipython() is False:
-    from docopt import docopt  # Command line argument handler
-    cmdln_args = docopt(__doc__)
-    tree_file = cmdln_args.get('<tree>')
-    taxa_to_keep_file = cmdln_args.get('<taxa_to_keep>')
-    clade = cmdln_args.get('<clade>')
-# Run interactively in an iPython console
-if in_ipython() is True:
-    tree_file = 'RAxML_bestTree.DNA_part_Jan2018.tre'
-    taxa_to_keep_file = 'taxa_burmPartials.txt'
-    clade = 'burmPartials'
+        full_tree = Tree(str(tree_file))
+    except Exception as e:
+        typer.echo(f"Error reading tree file '{tree_file}': {e}")
+        raise typer.Exit(code=1)
 
-# Retrieve name of the original tree and append with the clade being pruned
-# down to
-tree_name = os.path.splitext(tree_file)[0]
-out_tree_filename = tree_name + '_' + clade + '.tre'
+    # Read the list of taxa to keep
+    try:
+        with taxa_to_keep_file.open('r') as taxa_list:
+            taxa_to_keep = [line.strip() for line in taxa_list if line.strip()]
+    except Exception as e:
+        typer.echo(f"Error reading taxa file '{taxa_to_keep_file}': {e}")
+        raise typer.Exit(code=1)
 
-# Read in by ete3
-full_tree = Tree(tree_file)
+    # Check for taxa not present in the tree
+    tree_leaf_names = set(leaf.name for leaf in full_tree.get_leaves())
+    missing_taxa = [taxon for taxon in taxa_to_keep if taxon not in tree_leaf_names]
+    if missing_taxa:
+        typer.echo(
+            f"Warning: The following taxa were not found in the tree and will be ignored:\n{', '.join(missing_taxa)}"
+        )
 
-# Retrieve the list of taxa to be pruned down to
-taxa_to_keep = []
-with open(taxa_to_keep_file, 'r') as taxa_list:
-    for taxon in taxa_list:
-        taxon = taxon.rstrip('\n')    
-        taxa_to_keep.append(taxon)
+    # Keep only taxa present in the tree
+    taxa_to_keep_in_tree = [taxon for taxon in taxa_to_keep if taxon in tree_leaf_names]
+    if not taxa_to_keep_in_tree:
+        typer.echo("Error: None of the taxa to keep are present in the tree.")
+        raise typer.Exit(code=1)
 
-# Prune the full tree down to just the taxa listed
-full_tree.prune(taxa_to_keep, preserve_branch_length=True)
+    # Prune the tree
+    full_tree.prune(taxa_to_keep_in_tree, preserve_branch_length=True)
 
-# PAML requires an unrooted tree
-full_tree.unroot()
+    # Ensure the tree is unrooted
+    full_tree.unroot()
 
-# Write the pruned tree to a new file with the above filename
-full_tree.write(outfile=out_tree_filename)
+    # Write the pruned tree to a file
+    try:
+        full_tree.write(outfile=str(out_tree_path))
+        typer.echo(f"Pruned tree written to {out_tree_path}")
+    except Exception as e:
+        typer.echo(f"Error writing pruned tree: {e}")
+        raise typer.Exit(code=1)
+
+if __name__ == "__main__":
+    typer.run(main)
