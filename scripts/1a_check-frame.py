@@ -1,54 +1,57 @@
-'''Usage: check_frame.py <alignment>'''
-
-import os  # Manipulating filenames
+from pathlib import Path  # Import pathlib at the top
+import typer
 from Bio import SeqIO
 from Bio.Data import CodonTable
 
-# Check if running interactively in an iPython console, or in a script from the
-# command line
-def in_ipython():
+app = typer.Typer()
+
+@app.command()
+def check_frame(alignment_file: str):
+    """
+    Check if an alignment is in-frame, has no stop codons, or other erroneous characters.
+
+    Args:
+        alignment_file (str): Path to the alignment file to check.
+    """
+
+    # Use pathlib to handle file paths
+    alignment_path = Path(alignment_file)
+    
+    # Retrieve file extension to determine the format, removing the leading dot
+    alignment_format = alignment_path.suffix.lstrip('.')
+
+    # Remove 'temp_' prefix from filename if present
+    clean_alignment_file_name = alignment_path.name
+    if clean_alignment_file_name.startswith("temp_"):
+        clean_alignment_file_name = clean_alignment_file_name[len("temp_"):]
+
+    # Check if the file exists
+    if not alignment_path.is_file():
+        typer.echo(f"File not found: {alignment_file}")
+        raise typer.Exit(code=1)
+
     try:
-        __IPYTHON__
-        return True
-    except NameError:
-        return False
-# Run in a script from the command line
-if in_ipython() is False:
-    from docopt import docopt  # Command line argument handler
-    cmdln_args = docopt(__doc__)
-    alignment_file = cmdln_args.get('<alignment>')
-# Run interactively in an iPython console
-if in_ipython() is True:
-    alignment_file = 'rpl20_petrosavia_2018-10-01.fasta'
+        # Parse the first record to check sequence length
+        record = next(SeqIO.parse(alignment_path, format=alignment_format))
+        seq_len = len(record.seq)
+    except Exception as e:
+        typer.echo(f"Error reading {alignment_file}: {e}")
+        raise typer.Exit(code=1)
 
-alignment_format = os.path.splitext(alignment_file)[1]  # Retrieve filetype
-alignment_format = alignment_format[1:]  # Remove '.' character from filetype
+    # Check if sequence length is a multiple of 3
+    if seq_len % 3 != 0:
+        typer.echo(f"{clean_alignment_file_name} is out of frame.")
+    else:
+        # Check each record for stop codons after translation
+        for record in SeqIO.parse(alignment_path, format=alignment_format):
+            record_N = record.seq.replace('-', 'N')
+            try:
+                aa_record = record_N.translate()
+                if '*' in aa_record:
+                    typer.echo(f"{clean_alignment_file_name} contains at least one stop codon in {record.id}.")
+            except CodonTable.TranslationError as e:
+                typer.echo(f"{clean_alignment_file_name} {record.id} has a Translation Error: {e}")
 
-clean_alignment_file_name = alignment_file[len("temp_"):]
-
-record = next(SeqIO.parse(alignment_file, format=alignment_format))
-seq_len = len(record.seq)
-if seq_len % 3 != 0:
-    print(clean_alignment_file_name + ' is out of frame.')
-else:
-    for record in SeqIO.parse(alignment_file, format=alignment_format):
-        try:
-            aa_record = record.translate(gap='-')
-            if '*' in aa_record.seq:
-                print(clean_alignment_file_name + ' contains stop codons.')
-        except CodonTable.TranslationError:
-            pass
-            print(clean_alignment_file_name + ' has a Translation Error. Sometimes caused by the presence of "?" or other unknown characters in the alignment file.')
-
-
-#record_nogaps = record.seq.ungap('-')
-#if len(record_nogaps) % 3 != 0:
-#   pass
-#else:
-#   aa_record_nogaps = record_nogaps.translate()
-#if '*' in aa_record_nogaps:
-#print alignment_file + ' contains stop codons.'
-#else:
-#if len(record.seq) % 3 !=0:
-#pass
-#else:
+if __name__ == "__main__":
+    app()
+    
