@@ -1,8 +1,8 @@
-from pathlib import Path
+from pathlib import Path  # Manipulating filenames
 from Bio import SeqIO  # Reading DNA sequences
-from Bio.SeqRecord import SeqRecord
-from Bio.Seq import Seq
-import typer
+from Bio.SeqRecord import SeqRecord  # Create an empty sequence if the species is missing
+from Bio.Seq import Seq  # Create an empty sequence if the species is missing
+import typer  # CLI argument handler
 
 def main(
     alignment_file: Path = typer.Argument(
