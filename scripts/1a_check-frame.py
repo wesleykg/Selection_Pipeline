@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from pathlib import Path  # Manipulating filenames
 import typer  # CLI argument handler
 from Bio import SeqIO  # Reading sequences

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from pathlib import Path  # Manipulating filenames
 from Bio import SeqIO  # Reading DNA sequences
 from Bio.SeqRecord import SeqRecord  # Create an empty sequence if the species is missing

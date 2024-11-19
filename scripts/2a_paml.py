@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 '''Usage: paml.py <alignment> <tree> <test> <test_taxa>'''
 
 from Bio import SeqIO

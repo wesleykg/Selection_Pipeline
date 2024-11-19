@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from Bio.Seq import Seq
 from Bio import AlignIO
 from Bio.Align import MultipleSeqAlignment
