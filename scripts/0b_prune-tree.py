@@ -1,6 +1,6 @@
-from pathlib import Path
-from ete3 import Tree  # Manipulating trees
-import typer
+from pathlib import Path  # Manipulating filenames
+from ete3 import Tree  # Pruning trees
+import typer  # CLI argument handler
 
 def main(
     tree_file: Path = typer.Argument(

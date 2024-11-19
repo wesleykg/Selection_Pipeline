@@ -1,6 +1,6 @@
-from pathlib import Path
-from Bio import SeqIO
-import typer
+from pathlib import Path  # Manipulating filenames
+from Bio import SeqIO  # Reading in sequences
+import typer  # CLI argument handler
 
 def main(
     alignment_file: Path = typer.Argument(

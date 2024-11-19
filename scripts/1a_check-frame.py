@@ -1,7 +1,7 @@
-from pathlib import Path  # Import pathlib at the top
-import typer
-from Bio import SeqIO
-from Bio.Data import CodonTable
+from pathlib import Path  # Manipulating filenames
+import typer  # CLI argument handler
+from Bio import SeqIO  # Reading sequences
+from Bio.Data import CodonTable  # Check for oddities in the data
 
 app = typer.Typer()
 
