@@ -1,66 +1,61 @@
-'''Usage: filter-species.py <alignment> <wanted_species>'''
-
-# Modules
-import os  # Manipulating filenames
-from pathlib import Path  # Deleting old files
-from Bio import SeqIO  # Reading in DNA sequences
+from pathlib import Path
+from Bio import SeqIO  # Reading DNA sequences
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
+import typer
 
-# Check if running interactively in an iPython console, or in a script from the
-# command line
-def in_ipython():
+def main(
+    alignment_file: Path = typer.Argument(
+        ..., help="Path to the alignment file."
+    ),
+    wanted_species_file: Path = typer.Argument(
+        ..., help="Path to the file containing species to filter down to."
+    )
+):
+    # Retrieve clade and alignment names for output
     try:
-        __IPYTHON__
-        return True
-    except NameError:
-        return False
-
-
-# Run in a script from the command line
-if in_ipython() is False:
-    from docopt import docopt  # Command-line argument handler
-    cmdln_args = docopt(__doc__)
-    alignment_file = cmdln_args.get('<alignment>')
-    wanted_species_file = cmdln_args.get('<wanted_species>')
-# Run interactively in an iPython console
-if in_ipython() is True:
-    alignment_file = 'atpB_alltaxa_matrix_19Jan18.fasta'
-    wanted_species_file = 'taxa_burmPartials.txt'
-
-# Retrieve the clade and alignment name for output
-clade_name = os.path.splitext(wanted_species_file)[0]
-clade_name = clade_name.split('_')[1]
-alignment_name = os.path.splitext(alignment_file)[0]
-out_fasta_filename = alignment_name + '_' + clade_name + '.fasta'
-
-# Read in the wanted_species_file as a list of lines and retain the name in the
-# list wanted_species_names.
-wanted_species_names = []
-with open(wanted_species_file, 'r') as species_file:
-    wanted_species = species_file.readlines()
-    for line in wanted_species:
-        line = line.rstrip('\n')
-        wanted_species_names.append(line)
-
-# Loop through each wanted name and if it matches with a name in the alignment,
-# add that sequence record to the list matching_records.
-matching_records = []
-for record in SeqIO.parse(alignment_file, 'fasta'):
-    for name in wanted_species_names:
-        if name == record.id:
+        clade_name = wanted_species_file.stem.split('_')[1]
+    except IndexError:
+        typer.echo("Error: The wanted_species_file is formatted incorrectly, it needs to be taxa_*.txt")
+        raise typer.Exit(code=1)
+    
+    alignment_name = alignment_file.stem
+    alignment_format = alignment_file.suffix.lstrip('.')
+    out_filename = f"{alignment_name}_{clade_name}.{alignment_format}"
+    
+    # Read in the wanted species names
+    wanted_species_names = []
+    with wanted_species_file.open('r') as species_file:
+        for line in species_file:
+            name = line.strip()
+            if name:
+                wanted_species_names.append(name)
+    
+    # Collect matching records
+    matching_records = []
+    sequence_length = None
+    for record in SeqIO.parse(alignment_file, 'fasta'):
+        if record.id in wanted_species_names:
             matching_records.append(record)
-            wanted_species_names.remove(name)
+            wanted_species_names.remove(record.id)
+            sequence_length = len(record.seq)  # Get sequence length for gap sequences
+    
+    if sequence_length is None:
+        typer.echo("Error: No matching records found in the alignment file.")
+        raise typer.Exit(code=1)
+    
+    # Add missing species with gap sequences
+    for name in wanted_species_names:
+        gap_seq = '-' * sequence_length
+        empty_seq = SeqRecord(Seq(gap_seq), id=name, description='')
+        matching_records.append(empty_seq)
+    
+    # Write the filtered records to a new file
+    SeqIO.write(matching_records, out_filename, format=alignment_format)
+    typer.echo(f"Filtered alignment written to {out_filename}")
+    
+    # Delete the old alignment file
+    alignment_file.unlink()
 
-# Add missing species
-for name in wanted_species_names:
-    gap_seq = '-'*len(record)
-    empty_seq = SeqRecord(Seq(gap_seq), id=name, description='')
-    matching_records.append(empty_seq)
-
-
-# Write matching_records to file using the original filename and appending
-# .fasta to the end.
-SeqIO.write(matching_records, out_fasta_filename, format='fasta')
-alignment_path = Path(alignment_file)
-alignment_path.unlink()
+if __name__ == "__main__":
+    typer.run(main)
