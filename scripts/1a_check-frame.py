@@ -5,9 +5,6 @@ import typer  # CLI argument handler
 from Bio import SeqIO  # Reading sequences
 from Bio.Data import CodonTable  # Check for oddities in the data
 
-app = typer.Typer()
-
-@app.command()
 def check_frame(alignment_file: str):
     """
     Check if an alignment is in-frame, has no stop codons, or other erroneous characters.
@@ -55,5 +52,5 @@ def check_frame(alignment_file: str):
                 typer.echo(f"{clean_alignment_file_name} {record.id} has a Translation Error: {e}")
 
 if __name__ == "__main__":
-    app()
+    typer.run(check_frame)
     
