@@ -120,66 +120,66 @@ best_lnL = {'M0': float('-inf'), 'b_free': float('-inf'),
             'bsC': float('-inf')}
 
 # Quicker version of running PAML for testing
-# for model in test:
-#     model_specifications = model + '.' + 'bl' + '_' + '0.7' + 'w'
-#     print 'Testing model ' + model + ' on ' + alignment_name + \
-#           ' using starting branch length option ' + \
-#           'bl' + ' and initial omega: ' + \
-#           '0.7' + 'w'
-#     tree.run_model(model_specifications, fix_blength=1, omega=0.7)
-#     current_model = tree.get_evol_model(model_specifications)
-#     print 'The fitting of model ' + model + ' on ' + alignment_name + \
-#            ' using starting branch length option ' + \
-#            'bl' + ' and initial omega: ' + \
-#            '0.7' + 'w, the likelihood was: ' + \
-#            str(current_model.lnL)
-#     if current_model.lnL > best_lnL[model]:
-#         best_lnL[model] = current_model.lnL
-#         best_model[model] = current_model
+for model in test:
+    model_specifications = model + '.' + 'bl' + '_' + '0.7' + 'w'
+    print 'Testing model ' + model + ' on ' + alignment_name + \
+          ' using starting branch length option ' + \
+          'bl' + ' and initial omega: ' + \
+          '0.7' + 'w'
+    tree.run_model(model_specifications, fix_blength=1, omega=0.7)
+    current_model = tree.get_evol_model(model_specifications)
+    print(('The fitting of model ' + model + ' on ' + alignment_name + \
+           ' using starting branch length option ' + \
+           'bl' + ' and initial omega: ' + \
+           '0.7' + 'w, the likelihood was: ' + \
+           str(current_model.lnL)))
+    if current_model.lnL > best_lnL[model]:
+        best_lnL[model] = current_model.lnL
+        best_model[model] = current_model
 
 # Loop for running each version of each model in one test. Best models are
 # stored in a dictionary that is later read to write results
-for model in test:
-    for starting_branch_length_option in [1, -1]:
-        if starting_branch_length_option == 1:
-            branch_estimation = 'bl'
-        elif starting_branch_length_option == -1:
-            branch_estimation = 'random'
-        for initial_omega in [0.2, 0.7, 1.2]:
-            if model == 'bsA1':
-                initial_omega = 1.0
-            model_specifications = model + '.' + branch_estimation + '_' + \
-                                   str(initial_omega) + 'w'
-            print(('Testing model ' + model + ' on ' + alignment_name + \
-                  ' using starting branch length option ' + \
-                  branch_estimation + ' and initial omega: ' + \
-                  str(initial_omega) + 'w'))
-            if model == 'XX':
-                tree.run_model(model_specifications, \
-                            fix_blength=starting_branch_length_option, \
-                            omega=initial_omega, NSsites=22, ncatG=3)
+# for model in test:
+#     for starting_branch_length_option in [1, -1]:
+#         if starting_branch_length_option == 1:
+#             branch_estimation = 'bl'
+#         elif starting_branch_length_option == -1:
+#             branch_estimation = 'random'
+#         for initial_omega in [0.2, 0.7, 1.2]:
+#             if model == 'bsA1':
+#                 initial_omega = 1.0
+#             model_specifications = model + '.' + branch_estimation + '_' + \
+#                                    str(initial_omega) + 'w'
+#             print(('Testing model ' + model + ' on ' + alignment_name + \
+#                   ' using starting branch length option ' + \
+#                   branch_estimation + ' and initial omega: ' + \
+#                   str(initial_omega) + 'w'))
+#             if model == 'XX':
+#                 tree.run_model(model_specifications, \
+#                             fix_blength=starting_branch_length_option, \
+#                             omega=initial_omega, NSsites=22, ncatG=3)
                            
                            
-                # Here's the garbage I wrote to make sure that it parses the out files correctly
-                tree.get_evol_model(model_specifications).properties['typ'] = 'branch-site'
-                tree.get_evol_model(model_specifications)._load(model_specifications+'/out')
+#                 # Here's the garbage I wrote to make sure that it parses the out files correctly
+#                 tree.get_evol_model(model_specifications).properties['typ'] = 'branch-site'
+#                 tree.get_evol_model(model_specifications)._load(model_specifications+'/out')
                
                
-            else:
-                tree.run_model(model_specifications, \
-                            fix_blength=starting_branch_length_option, \
-                            omega=initial_omega)
-            current_model = tree.get_evol_model(model_specifications)
-            print(('The fitting of model ' + model + ' on ' + alignment_name + \
-                  ' using starting branch length option ' + \
-                  branch_estimation + ' and initial omega: ' + \
-                  str(initial_omega) + 'w, the likelihood was: ' + \
-                  str(current_model.lnL)))
-            if current_model.lnL > best_lnL[model]:
-                best_lnL[model] = current_model.lnL
-                best_model[model] = current_model
-            if model == 'bsA1':
-                break
+#             else:
+#                 tree.run_model(model_specifications, \
+#                             fix_blength=starting_branch_length_option, \
+#                             omega=initial_omega)
+#             current_model = tree.get_evol_model(model_specifications)
+#             print(('The fitting of model ' + model + ' on ' + alignment_name + \
+#                   ' using starting branch length option ' + \
+#                   branch_estimation + ' and initial omega: ' + \
+#                   str(initial_omega) + 'w, the likelihood was: ' + \
+#                   str(current_model.lnL)))
+#             if current_model.lnL > best_lnL[model]:
+#                 best_lnL[model] = current_model.lnL
+#                 best_model[model] = current_model
+#             if model == 'bsA1':
+#                 break
 
 # Retrieve results from the best model
 for model in test:
