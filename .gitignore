@@ -9,3 +9,7 @@ safe/
 original_files/
 .vscode/
 paml.log
+scripts/2a_paml_cmD.sh
+scripts/2a_paml_bsA.sh
+scripts/2a_paml_cmC.sh
+scripts/2a_paml_branch.sh
