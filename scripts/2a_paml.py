@@ -3,7 +3,7 @@
 '''Usage: paml.py <alignment> <tree> <test> <test_taxa>'''
 
 from Bio import SeqIO
-import os
+from pathlib import Path
 from ete3 import EvolTree
 from itertools import combinations
 
@@ -37,10 +37,10 @@ else:
     test = tests['branch']
     test_taxa_file = 'test_taxa_burmPartials.txt'
 
-alignment_name = os.path.basename(alignment_file)
+alignment_name = Path(alignment_file).name
 gene_name = alignment_name.split('_')[0]
-clade_name = alignment_file.split('_')[1]
-alignment_format = os.path.splitext(alignment_file)[1][1:]  # Remove '.' from filetype
+clade_name = Path(alignment_file).stem.split('_')[1]
+alignment_format = Path(alignment_file).suffix[1:]  # Remove '.' from filetype
 
 # Check for empty sequences
 empty_seq_count = 0
@@ -58,7 +58,7 @@ if empty_seq_count >= 1:
     ]
 
 tree = EvolTree(tree_file)
-out_tree_name = f"{os.path.splitext(os.path.basename(tree_file))[0]}_{gene_name}.tre"
+out_tree_name = f"{Path(tree_file).stem}_{gene_name}.tre"
 
 if empty_seq_count >= 1 and len(taxa_in_alignment) >= 1:
     tree.prune(taxa_in_alignment, preserve_branch_length=True)
@@ -67,7 +67,7 @@ if empty_seq_count >= 1 and len(taxa_in_alignment) >= 1:
     tree = EvolTree(out_tree_name)
 
 tree.link_to_alignment(alignment_file)
-tree.workdir = os.getcwd()
+tree.workdir = str(Path.cwd())
 
 # Collect node IDs for later use
 list_of_node_ids = [node.node_id for node in tree.traverse('postorder')]
