@@ -122,17 +122,10 @@ best_lnL = {'M0': float('-inf'), 'b_free': float('-inf'),
 # Quicker version of running PAML for testing
 for model in test:
     model_specifications = model + '.' + 'bl' + '_' + '0.7' + 'w'
-    print 'Testing model ' + model + ' on ' + alignment_name + \
-          ' using starting branch length option ' + \
-          'bl' + ' and initial omega: ' + \
-          '0.7' + 'w'
+    print(f"Testing model {model} on {alignment_name} using starting branch length option bl and initial omega: 0.7w")
     tree.run_model(model_specifications, fix_blength=1, omega=0.7)
     current_model = tree.get_evol_model(model_specifications)
-    print(('The fitting of model ' + model + ' on ' + alignment_name + \
-           ' using starting branch length option ' + \
-           'bl' + ' and initial omega: ' + \
-           '0.7' + 'w, the likelihood was: ' + \
-           str(current_model.lnL)))
+    print(f"The fitting of model {model} on {alignment_name} using starting branch length option bl and initial omega: 0.7w, the likelihood was: {current_model.lnL}")
     if current_model.lnL > best_lnL[model]:
         best_lnL[model] = current_model.lnL
         best_model[model] = current_model
