@@ -1,6 +1,5 @@
-docopt
+typer
 scipy
 Biopython
 ete3
 six
-spyder-kernels
