@@ -4,6 +4,7 @@ from pathlib import Path  # Manipulating filenames
 from Bio import SeqIO  # Reading DNA sequences
 from Bio.SeqRecord import SeqRecord  # Create an empty sequence if the species is missing
 from Bio.Seq import Seq  # Create an empty sequence if the species is missing
+import sys # Retrieve output directory from Snakemake
 import typer  # CLI argument handler
 
 def main(
@@ -12,6 +13,9 @@ def main(
     ),
     wanted_species_file: Path = typer.Argument(
         ..., help="Path to the file containing species to filter down to."
+    ),
+    out_path: Path = typer.Argument(
+        ..., help="Path to the output directory."
     )
 ):
     # Retrieve clade and alignment names for output
@@ -23,8 +27,9 @@ def main(
     
     alignment_name = alignment_file.stem
     alignment_format = alignment_file.suffix.lstrip('.')
-    out_filename = f"{alignment_name}_{clade_name}.{alignment_format}"
-    
+    out_filename = f"{alignment_name}_{clade_name}_filtered.{alignment_format}"
+    output_path_filename = sys.argv[3]
+
     # Read in the wanted species names
     wanted_species_names = []
     with wanted_species_file.open('r') as species_file:
@@ -53,8 +58,8 @@ def main(
         matching_records.append(empty_seq)
     
     # Write the filtered records to a new file
-    SeqIO.write(matching_records, out_filename, format=alignment_format)
-    typer.echo(f"Filtered alignment written to {out_filename}")
+    SeqIO.write(matching_records, output_path_filename, format=alignment_format)
+    typer.echo(f"Filtered alignment written to {output_path_filename}")
     
     # Delete the old alignment file
     alignment_file.unlink()
