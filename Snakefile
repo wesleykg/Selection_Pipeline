@@ -15,7 +15,7 @@ alignments = [
     for f in alignment_files
 ]
 
-rule all:
+rule filter_all:
     input:
         expand("alignments/{subdir}/{alignment}_{subdir}_filtered.fasta", 
                subdir=[s[0] for s in alignments], 
