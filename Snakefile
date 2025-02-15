@@ -1,19 +1,14 @@
+from pathlib import Path
 import glob
-import os
 
 # Get all subdirectories inside alignments/
-subdirs = [d for d in glob.glob("alignments/*") if os.path.isdir(d)]
+subdirs = [Path(d) for d in glob.glob("alignments/*") if Path(d).is_dir()]
 
 # Find all `.fasta` files in those subdirectories and extract alignment names
-alignment_files = []
-for subdir in subdirs:
-    alignment_files.extend(glob.glob(f"{subdir}/*.fasta"))
+alignment_files = [f for subdir in subdirs for f in subdir.glob("*.fasta")]
 
 # Extract directory names and alignment names
-alignments = [
-    (os.path.basename(os.path.dirname(f)), os.path.basename(f).replace(".fasta", ""))
-    for f in alignment_files
-]
+alignments = [(f.parent.name, f.stem) for f in alignment_files]
 
 rule filter_all:
     input:
