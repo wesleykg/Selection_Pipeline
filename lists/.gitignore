@@ -1,7 +1,11 @@
 # Ignore everything in this directory
 *
-# Except these file
+
+# Except these files and directories
 !.gitignore
 !genes/
+!genes/.gitkeep
 !taxa/
+!taxa/.gitkeep
 !test_taxa/
+!test_taxa/.gitkeep
