@@ -27,7 +27,7 @@ rule filter:
         "scripts/0a_filter-species.py {input} {output}"
 
 # Detect all tree files in `trees/original/`
-tree_files = glob.glob("trees/original/*.tre")
+original_tree_file = glob.glob("trees/original/*.tre")
 
 # Detect all taxa list files in `trees/taxa_*.txt`
 taxa_lists = glob.glob("lists/taxa/taxa_*.txt")
@@ -35,36 +35,20 @@ taxa_lists = glob.glob("lists/taxa/taxa_*.txt")
 lineages = [Path(t).stem.replace("taxa_", "") for t in taxa_lists]
 
 rule prune_all:
-    """
-    Aggregation rule that ensures all lineages have been pruned.
-    We define the output as the set of all lineage directories,
-    indicating that all pruned trees are in place.
-    """
     input:
         expand("trees/{lineage}", lineage=lineages)
 
 rule prune_trees:
-    """
-    For each lineage file, prune every .tre in trees/original/ 
-    and move them into trees/{lineage}/
-    """
     input:
-        taxa_list = "lists/taxa/taxa_{lineage}.txt",
-        # Provide the entire list of .tre files as input so the script can prune each
-        tree_files = tree_files
+        original_tree_file=original_tree_file,
+        taxa_list="lists/taxa/taxa_{lineage}.txt"
     output:
-        # We treat the entire lineage directory as the 'output'
-        # so Snakemake knows something was produced there.
         directory("trees/{lineage}")
     shell:
         """
-        # 1. Run the prune script on all original trees for this lineage.
-        python scripts/0b_prune-tree.py {input.tree_files} {input.taxa_list} {wildcards.lineage}
+        python scripts/0b_prune-tree.py {input.original_tree_file} {input.taxa_list} {wildcards.lineage}
 
-        # 2. Create a directory for pruned trees, if it doesn't exist.
         mkdir -p trees/{wildcards.lineage}
 
-        # 3. Move any newly created pruned *.tre files for this lineage
-        #    into trees/{wildcards.lineage}/
         mv trees/original/*_{wildcards.lineage}.tre trees/{wildcards.lineage}/ 2>/dev/null || true
         """
