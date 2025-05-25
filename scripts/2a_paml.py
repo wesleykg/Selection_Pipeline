@@ -109,7 +109,7 @@ def main(
                 if model == 'bsA1':
                     initial_omega = 1.0
                 model_specifications = f"{model}.{branch_estimation}_{initial_omega}w"
-                print(f"Testing model {model} on {alignment_name} with starting branch length option {branch_estimation} and initial omega: {initial_omega}w")
+                print(f"Testing model: {model} on: {alignment_name} with starting branch length option: {branch_estimation} and initial omega: {initial_omega}w\n")
                 
                 if model == 'XX':
                     tree.run_model(model_specifications, fix_blength=starting_branch_length_option, omega=initial_omega, NSsites=22, ncatG=3)
@@ -119,10 +119,10 @@ def main(
                     tree.run_model(model_specifications, fix_blength=starting_branch_length_option, omega=initial_omega)
                 
                 current_model = tree.get_evol_model(model_specifications)
-                print(f"""Model fitting of {alignment_name} complete, the likelihood was: {current_model.lnL} with these settings:
+                print(f"""Model fitting of: {alignment_name} complete, the likelihood was: {current_model.lnL} with these settings:
                     - Model: {model}
                     - Starting Branch Length Option: {branch_estimation}
-                    - Initial Omega: {initial_omega}w""")
+                    - Initial Omega: {initial_omega}w\n""")
                 
                 if current_model.lnL > best_lnL[model]:
                     best_lnL[model] = current_model.lnL
@@ -145,7 +145,7 @@ def main(
             out_filename = f"{clade_name}_{gene_name}_{model}.csv"
             with open(out_filename, 'w') as out_results:
                 out_results.write(results)
-            print(f"Results for the best model {model} written to {out_filename}")
+            print(f"Results for the best model {model} written to {out_filename}\n")
 
         elif model == 'b_free':
             all_branch_stats = current_model.branches
@@ -164,7 +164,7 @@ def main(
             out_filename = f"{clade_name}_{gene_name}_{model}.csv"
             with open(out_filename, 'w') as out_results:
                 out_results.write(results)
-            print(f"Results for the best model {model} written to {out_filename}")
+            print(f"Results for the best model {model} written to {out_filename}\n")
 
         elif model == 'M3':
             classes = current_model.classes
