@@ -3,3 +3,4 @@ scipy
 Biopython
 ete3
 six
+legacy-cgi
