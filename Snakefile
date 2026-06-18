@@ -5,35 +5,38 @@ import glob
 subdirs = [Path(d) for d in glob.glob("alignments/*") if Path(d).is_dir()]
 
 # Each processing step deletes its input, so only one tier of fasta files
-# exists at a time. Detect which stage we're at and derive base names accordingly.
+# exists at a time. Check most-processed stage first so downstream rules
+# consume whatever files exist without requiring the earlier optional steps.
 # Stages: original → _filtered → _stops_trimmed → _gaps_trimmed
 _orig_files = [
     f for subdir in subdirs for f in subdir.glob("*.fasta")
     if not any(kw in f.stem for kw in ("_filtered", "_stops_trimmed", "_gaps_trimmed"))
 ]
-_filtered_files     = [f for subdir in subdirs for f in subdir.glob("*_filtered.fasta")]
+_filtered_files      = [f for subdir in subdirs for f in subdir.glob("*_filtered.fasta")]
 _stops_trimmed_files = [f for subdir in subdirs for f in subdir.glob("*_stops_trimmed.fasta")]
 _gaps_trimmed_files  = [f for subdir in subdirs for f in subdir.glob("*_gaps_trimmed.fasta")]
 
-if _orig_files:
-    alignments = [(f.parent.name, f.stem) for f in _orig_files]
-elif _filtered_files:
-    alignments = [(f.parent.name, f.stem[: -len("_filtered")]) for f in _filtered_files]
+if _gaps_trimmed_files:
+    alignments = [(f.parent.name, f.stem[: -len("_gaps_trimmed")]) for f in _gaps_trimmed_files]
+    _fasta_suffix = "_gaps_trimmed"
 elif _stops_trimmed_files:
     alignments = [(f.parent.name, f.stem[: -len("_stops_trimmed")]) for f in _stops_trimmed_files]
-elif _gaps_trimmed_files:
-    alignments = [(f.parent.name, f.stem[: -len("_gaps_trimmed")]) for f in _gaps_trimmed_files]
+    _fasta_suffix = "_stops_trimmed"
+elif _filtered_files:
+    alignments = [(f.parent.name, f.stem[: -len("_filtered")]) for f in _filtered_files]
+    _fasta_suffix = "_filtered"
+elif _orig_files:
+    alignments = [(f.parent.name, f.stem) for f in _orig_files]
+    _fasta_suffix = ""
 else:
     alignments = []
+    _fasta_suffix = ""
 filtered_subdirs = sorted({s[0] for s in alignments})
 
 # Detect all tree files in `trees/original/`
 original_tree_file = glob.glob("trees/original/*.tre")
 
-# Detect all taxa list files in `lists/taxa/taxa_*.txt`
-taxa_lists = glob.glob("lists/taxa/taxa_*.txt")
-# Extract the lineage name by removing 'taxa_' and file extension
-lineages = [Path(t).stem.replace("taxa_", "") for t in taxa_lists]
+lineages = [d.name for d in subdirs]
 
 
 # ── Step 0: filter species & prune trees ──────────────────────────────
@@ -127,28 +130,27 @@ rule trim_gap_columns:
 
 
 # ── Step 1c: check reading frame (diagnostic, independent branch) ─────
-# Produces issues.txt per lineage; does not block the main pipeline.
+# No output declared so this rule always reruns when targeted, making it
+# safe to call repeatedly while reviewing alignment issues.
 
 rule check_frame_all:
     input:
-        expand("alignments/{subdir}/issues.txt", subdir=filtered_subdirs)
-
-rule check_frame:
-    input:
-        lambda wc: [
-            f"alignments/{wc.subdir}/{stem}_gaps_trimmed.fasta"
+        [
+            f"alignments/{subdir}/{stem}{_fasta_suffix}.fasta"
             for subdir, stem in alignments
-            if subdir == wc.subdir
         ]
-    output:
-        "alignments/{subdir}/issues.txt"
+    params:
+        subdirs=" ".join(filtered_subdirs),
+        suffix=_fasta_suffix
     shell:
         """
-        rm -f {output}
-        for fasta in alignments/{wildcards.subdir}/*_trimmed.fasta; do
-            python scripts/1a_check-frame.py "$fasta" >> {output} 2>/dev/null || true
+        for subdir in {params.subdirs}; do
+            rm -f alignments/$subdir/issues.txt
+            for fasta in alignments/$subdir/*{params.suffix}.fasta; do
+                python scripts/1a_check-frame.py "$fasta" >> alignments/$subdir/issues.txt 2>/dev/null || true
+            done
+            sort -u alignments/$subdir/issues.txt -o alignments/$subdir/issues.txt 2>/dev/null || true
         done
-        sort -u {output} -o {output} 2>/dev/null || true
         """
 
 
@@ -163,7 +165,7 @@ rule concat_all:
 rule concat_alignments:
     input:
         lambda wc: [
-            f"alignments/{wc.subdir}/{stem}_gaps_trimmed.fasta"
+            f"alignments/{wc.subdir}/{stem}{_fasta_suffix}.fasta"
             for subdir, stem in alignments
             if subdir == wc.subdir
         ]
@@ -187,7 +189,6 @@ rule paml_prep_all:
 
 checkpoint paml_prep:
     input:
-        concat_done="alignments/{lineage}/concat_done",
         taxa_file="lists/test_taxa/test_taxa_{lineage}.txt",
         tree_dir="trees/{lineage}"
     output:
@@ -196,12 +197,22 @@ checkpoint paml_prep:
         """
         mkdir -p {output}
 
+        # Copy gene-group subdirectories created by concat_alignments
         for inner_dir in alignments/{wildcards.lineage}/*/; do
             if [ -d "$inner_dir" ] && [ -n "$(ls -A "$inner_dir" 2>/dev/null)" ]; then
                 inner_name=$(basename "$inner_dir")
                 mkdir -p {output}/$inner_name
                 cp -r "$inner_dir/"* {output}/$inner_name/
             fi
+        done
+
+        # Also copy individual fasta files directly in the lineage dir
+        # into their own gene-named subdirs (handles both concat and no-concat)
+        for fasta in alignments/{wildcards.lineage}/*.fasta; do
+            [ -f "$fasta" ] || continue
+            gene=$(basename "$fasta" | cut -d'_' -f1)
+            mkdir -p {output}/$gene
+            cp "$fasta" {output}/$gene/
         done
 
         cp {input.taxa_file} {output}/
