@@ -10,6 +10,8 @@ original_files/
 .vscode/
 .snakemake/
 paml.log
+combined_results.csv
+combined_results_corrected.csv
 scripts/2a_paml_cmD.sh
 scripts/2a_paml_bsA.sh
 scripts/2a_paml_cmC.sh
